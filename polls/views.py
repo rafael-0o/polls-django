@@ -5,26 +5,29 @@ from django.db.models import F
 #from django.template import loader
 from .models import Question, Choice
 from django.views import generic
+from django.utils import timezone
 # Create your views here.
 
-class indexView(generic.ListView):
+class IndexView(generic.ListView):
     #lastest_question_list = Question.objects.order_by("-pub_date")[:5]
     #output=", ".join([q.question_text for q in lastest_question_list])
     #template=loader.get_template("polls/index.html")
     template_name = "polls/index.html"
     context_object_name = "latest_question_list"
     def get_queryset(self):
-        return Question.objects.order_by("-pub_date")[:5]
+        return Question.objects.filter(pub_date__lte=timezone.now()).order_by("-pub_date")[:5]
 
-class detailView(generic.ListView):
+class DetailView(generic.DetailView):
     #try:
     #    question=Question.objects.get(pk=question_id)
     #except Question.DoesNotExist:
     #    raise Http404("Question does not exist")
     model = Question
     template_name= "polls/detail.html"
+    def get_queryset(self):
+        return Question.objects.filter(pub_date__lte=timezone.now())
 
-class resultsView(generic.ListView):
+class ResultsView(generic.DetailView):
     #respose = "You are looking the result of question %s"
     model = Question
     template_name= "polls/results.html"
@@ -36,7 +39,7 @@ def vote(request, question_id):
     except(KeyError, Choice.DoesNotExist):
         return render(
             request,
-            "polls/details.hmtl",
+            "polls/detail.hmtl",
             {
                 "question": question,
                 "error_message": "No choice selected",
@@ -45,4 +48,4 @@ def vote(request, question_id):
     else:
         selected_choice.votes = F("votes") + 1
         selected_choice.save()
-        return HttpResponseRedirect(reverse("polls:results", args=(question.id)))
+        return HttpResponseRedirect(reverse("polls:results", args=(question.id,)))
